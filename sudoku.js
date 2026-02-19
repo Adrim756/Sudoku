@@ -1,87 +1,84 @@
 const canvas = document.getElementById("board");
 const ctx = canvas.getContext("2d");
 
-const CANVAS_SIZE = 300;
-const BOARD_SIZE = 9;
-const BLOCK = 3;
+const SIZE = 300;
+const komorka = SIZE / 9;     // ≈ 33.333 px
 
-const THIN_LINE = 1;
-const THICK_LINE = 3;
+const CIENKA = 1;
+const GRUBA  = 3;
+const HALF_GRUBA = GRUBA / 2;   // 1.5 px – to klucz do „wewnątrz”
 
-const CELL = (CANVAS_SIZE - THICK_LINE*4) / 9;
+// --------------------------------------------------
+function rysujPlansze() {
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.strokeStyle = "black";
 
-function drawBoard() {
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    // 1. Cienkie linie wewnątrz bloków (1 px)
+    ctx.lineWidth = CIENKA;
+    for (let i = 1; i < 9; i++) {
+        const pos = i * komorka;
 
-    // Funkcja do rysowania pojedynczej linii
-    function drawLine(pos, isVertical, isThick) {
-        ctx.beginPath();
-        ctx.lineWidth = isThick ? THICK_LINE : THIN_LINE;
-        ctx.strokeStyle = "black";
-        if (isVertical) {
-            ctx.moveTo(pos + ctx.lineWidth/2, 0);
-            ctx.lineTo(pos + ctx.lineWidth/2, CANVAS_SIZE);
-        } else {
-            ctx.moveTo(0, pos + ctx.lineWidth/2);
-            ctx.lineTo(CANVAS_SIZE, pos + ctx.lineWidth/2);
+        // cienkie tylko wewnątrz bloków (nie na granicach 3×3)
+        if (i % 3 !== 0) {
+            ctx.beginPath();
+            ctx.moveTo(pos, 0);
+            ctx.lineTo(pos, SIZE);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, pos);
+            ctx.lineTo(SIZE, pos);
+            ctx.stroke();
         }
+    }
+
+    // 2. Grube linie – przesunięte do środka o połowę grubości
+    ctx.lineWidth = GRUBA;
+
+    // pozycje granic bloków: 0, 3, 6, 9 → ale przesuwamy je lekko do środka
+    for (let i = 0; i <= 9; i += 3) {
+        const pos = i * komorka;
+
+        // pionowe grube – przesunięcie +HALF_GRUBA (do prawej)
+        ctx.beginPath();
+        ctx.moveTo(pos + HALF_GRUBA, 0);
+        ctx.lineTo(pos + HALF_GRUBA, SIZE);
+        ctx.stroke();
+
+        // poziome grube – przesunięcie +HALF_GRUBA (w dół)
+        ctx.beginPath();
+        ctx.moveTo(0, pos + HALF_GRUBA);
+        ctx.lineTo(SIZE, pos + HALF_GRUBA);
         ctx.stroke();
     }
 
-    // Rysowanie poziomych linii
-    let y = 0;
-    for (let r = 0; r <= BOARD_SIZE; r++) {
-        const isThick = (r % BLOCK === 0);
-        drawLine(y, false, isThick);
-        y += CELL;
-        if (isThick) y += THICK_LINE;
-    }
-
-    // Rysowanie pionowych linii
-    let x = 0;
-    for (let c = 0; c <= BOARD_SIZE; c++) {
-        const isThick = (c % BLOCK === 0);
-        drawLine(x, true, isThick);
-        x += CELL;
-        if (isThick) x += THICK_LINE;
-    }
+    // 3. Zewnętrzna ramka – osobno, cienka lub gruba, ale bez wystawania
+    // Jeśli chcesz grubą ramkę zewnętrzną bez wystawania na zewnątrz:
+    ctx.lineWidth = GRUBA;
+    ctx.strokeRect(
+        HALF_GRUBA,           // lewa
+        HALF_GRUBA,           // góra
+        SIZE - GRUBA,         // szerokość
+        SIZE - GRUBA          // wysokość
+    );
 }
 
-// Funkcja do rysowania litery w kwadracie
-function draw_letter(col, row, letter) {
-    let x = 0;
-    for (let c = 0; c < col; c++) {
-        x += CELL;
-        if (c % BLOCK === 2) x += THICK_LINE;
-        else x += THIN_LINE;
-    }
+// --------------------------------------------------
+function rysujLitere(kol, wiersz, znak) {
+    const x = kol * komorka + komorka / 2;
+    const y = wiersz * komorka + komorka / 2;
 
-    let y = 0;
-    for (let r = 0; r < row; r++) {
-        y += CELL;
-        if (r % BLOCK === 2) y += THICK_LINE;
-        else y += THIN_LINE;
-    }
-
-    // Środek kwadratu
-    let centerX = x + CELL/2;
-    let centerY = y + CELL/2;
-
-    // Ustawienia tekstu
-    ctx.font = "12px sans-serif";
-    ctx.textBaseline = "middle"; // pionowe wyśrodkowanie
-    ctx.textAlign = "center";    // poziome wyśrodkowanie
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillStyle = "black";
-
-    // Rysujemy literę
-    ctx.fillText(letter, centerX, centerY);
+    ctx.fillText(znak, x, y);
 }
 
-// Rysujemy planszę
-drawBoard();
+// --------------------------------------------------
+rysujPlansze();
 
-// Wpisujemy litery RAUCZYNSKI na przekątnej
-const letters = ["R","A","U","C","Z","Y","N","S","K"];
-for (let i = 0; i < letters.length; i++) {
-    draw_letter(i, i, letters[i]);
+const litery = ["R", "A", "U", "C", "Z", "Y", "N", "S", "K"];
+for (let i = 0; i < 9; i++) {
+    rysujLitere(i, i, litery[i]);
 }
