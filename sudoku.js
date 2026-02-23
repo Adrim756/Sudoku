@@ -5,7 +5,6 @@ var ctx = canvas.getContext("2d");
 // stałe – rozmiary i grubości linii
 var rozmiar = 300;          // caly obrazek 300x300
 var kratka = rozmiar / 9;   // jedna kratka ≈33.33 px
-
 var cienkaLinia = 1;
 var grubaLinia = 3;
 var polowaGrubej = grubaLinia / 2; // 1.5 px żeby linie były symetryczne
@@ -26,10 +25,50 @@ var tablica = [
   [-1,-1,-1, -1,-1,-1, -1,-1,-1]
 ];
 
+// tablica blokująca startowe litery (true = nie można zmieniać)
+var startowe = [
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false],
+  [false,false,false,false,false,false,false,false,false]
+];
+
+// --- 6. Początkowa plansza (przykładowa z Sudoku) ---
+function inicjalizujPlanszeStartowa() {
+  var przyklad = [
+    [5,3,-1, -1,7,-1, -1,-1,-1],
+    [6,-1,-1, 1,9,5, -1,-1,-1],
+    [-1,9,8, -1,-1,-1, -1,6,-1],
+
+    [8,-1,-1, -1,6,-1, -1,-1,3],
+    [4,-1,-1, 8,-1,3, -1,-1,1],
+    [7,-1,-1, -1,2,-1, -1,-1,6],
+
+    [-1,6,-1, -1,-1,-1, 2,8,-1],
+    [-1,-1,-1, 4,1,9, -1,-1,5],
+    [-1,-1,-1, -1,8,-1, -1,7,9]
+  ];
+
+  for (var r=0; r<9; r++) {
+    for (var c=0; c<9; c++) {
+      if (przyklad[r][c] !== -1) {
+        tablica[r][c] = przyklad[r][c] - 1; // zamiana na indeks 0-8
+        startowe[r][c] = true;               // blokada startowych liter
+      }
+    }
+  }
+}
+
+
 // funkcja rysuje całą siatkę – robimy to tylko raz na początku
 function narysujSiatke() {
   ctx.clearRect(0, 0, rozmiar, rozmiar); // czyścimy wszystko
-  ctx.strokeStyle = "red";             // kolor linii = czarny
+  ctx.strokeStyle = "black";             // kolor linii = czarny
 
   // rysujemy cienkie linie (1 px) – tylko wewnątrz bloków 3x3
   ctx.lineWidth = cienkaLinia;
@@ -73,7 +112,7 @@ function narysujSiatke() {
 }
 
 // funkcja wpisuje literę albo czyści kratkę
-function wpiszLitere(kolumna, wiersz) {
+function draw_letter(kolumna, wiersz) {
   var x = kolumna * kratka;
   var y = wiersz * kratka;
   var numerLitery = tablica[wiersz][kolumna];
@@ -183,24 +222,28 @@ function poKliknieciu(e) {
 
   if (kolumna < 0 || kolumna > 8 || wiersz < 0 || wiersz > 8) return;
 
+  // blokada startowych liter
+  if (startowe[wiersz][kolumna]) return;
+
   var aktualnyNumer = tablica[wiersz][kolumna];
+  if (aktualnyNumer == -1) tablica[wiersz][kolumna] = 0;
+  else if (aktualnyNumer < litery.length-1) tablica[wiersz][kolumna] += 1;
+  else tablica[wiersz][kolumna] = -1;
 
-  if (aktualnyNumer == -1) {
-    tablica[wiersz][kolumna] = 0;
-  } else if (aktualnyNumer < litery.length - 1) {
-    tablica[wiersz][kolumna] = aktualnyNumer + 1;
-  } else {
-    tablica[wiersz][kolumna] = -1;
-  }
-
-  // --- zamiast czyścić kratkę, rysujemy całą siatkę i wszystkie litery ---
   narysujSiatke();
-  for (var r = 0; r < 9; r++) {
-    for (var c = 0; c < 9; c++) {
-      if (tablica[r][c] >= 0) wpiszLitere(c, r);
+  for (var r=0; r<9; r++) {
+    for (var c=0; c<9; c++) {
+      if (tablica[r][c] >= 0) draw_letter(c,r);
     }
   }
 }
+
 // start programu
+inicjalizujPlanszeStartowa();
 narysujSiatke();
-canvas.addEventListener("click", poKliknieciu); 
+for (var r=0; r<9; r++) {
+  for (var c=0; c<9; c++) {
+    if (tablica[r][c]>=0) draw_letter(c,r);
+  }
+}
+canvas.addEventListener("click", poKliknieciu);
