@@ -40,24 +40,24 @@ var startowe = [
 
 // --- 6. Początkowa plansza (przykładowa z Sudoku) ---
 function inicjalizujPlanszeStartowa() {
-  var przyklad = [
-    [5,3,-1, -1,7,-1, -1,-1,-1],
-    [6,-1,-1, 1,9,5, -1,-1,-1],
-    [-1,9,8, -1,-1,-1, -1,6,-1],
+var plasza_1 = [
+  [5,3,4, 6,7,8, 9,1,2],
+  [6,7,2, 1,9,5, 3,4,8],
+  [1,9,8, 3,4,2, 5,6,-1],   // ostatnie pole w wierszu 2 -> 1 kliknięcie
 
-    [8,-1,-1, -1,6,-1, -1,-1,3],
-    [4,-1,-1, 8,-1,3, -1,-1,1],
-    [7,-1,-1, -1,2,-1, -1,-1,6],
+  [8,5,9, 7,6,1, 4,2,3],
+  [4,2,6, 8,5,3, 7,9,1],
+  [7,1,3, 9,2,4, 8,5,6],
 
-    [-1,6,-1, -1,-1,-1, 2,8,-1],
-    [-1,-1,-1, 4,1,9, -1,-1,5],
-    [-1,-1,-1, -1,8,-1, -1,7,9]
-  ];
+  [9,6,1, 5,3,7, 2,8,4],
+  [2,8,7, 4,1,9, 6,-1,5],   // wiersz 7 -> 1 kliknięcie
+  [3,4,5, 2,8,6, -1,7,9]    // wiersz 8 -> 1 kliknięcie
+];
 
   for (var r=0; r<9; r++) {
     for (var c=0; c<9; c++) {
-      if (przyklad[r][c] !== -1) {
-        tablica[r][c] = przyklad[r][c] - 1; // zamiana na indeks 0-8
+      if (plasza_1[r][c] !== -1) {
+        tablica[r][c] = plasza_1[r][c] - 1; // zamiana na indeks 0-8
         startowe[r][c] = true;               // blokada startowych liter
       }
     }
@@ -68,7 +68,7 @@ function inicjalizujPlanszeStartowa() {
 // funkcja rysuje całą siatkę – robimy to tylko raz na początku
 function narysujSiatke() {
   ctx.clearRect(0, 0, rozmiar, rozmiar); // czyścimy wszystko
-  ctx.strokeStyle = "black";             // kolor linii = czarny
+  ctx.strokeStyle = ctx.strokeStyle = "rgb(0,0,0)";             // kolor linii = czarny
 
   // rysujemy cienkie linie (1 px) – tylko wewnątrz bloków 3x3
   ctx.lineWidth = cienkaLinia;
@@ -189,8 +189,8 @@ else if (wiersz <= 7) {
     }
   }
 }
-  // rysuj tło z przesunięciem i dopasowanym rozmiarem
-  ctx.fillStyle = "rgb(46,52,54)";
+  // rysuj tło z przesunięciem i dopasowanym rozmiarem           
+ ctx.fillStyle = startowe[wiersz][kolumna] ? "rgb(62,68,70) " : "rgb(46,52,54)";
   ctx.fillRect(
     x + offsetX,
     y + offsetY,
@@ -203,7 +203,7 @@ else if (wiersz <= 7) {
     var srodekX = x + kratka / 2;
     var srodekY = y + kratka / 1.9;
 
-    ctx.font = "bold 22px Arial";
+    ctx.font = startowe[wiersz][kolumna] ? "bold 22px Arial" : "22px Arial";
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -211,8 +211,87 @@ else if (wiersz <= 7) {
   }
 }
 
+var wygrana = false; // flaga, czy gra została wygrana
+
+function sprawdzWygrana() {
+  for (var r = 0; r < 9; r++) {
+    var wierszSet = new Set();
+    var kolumnaSet = new Set();
+    for (var c = 0; c < 9; c++) {
+      var valW = tablica[r][c];
+      var valK = tablica[c][r];
+
+      if (valW < 0 || valK < 0) return false; // jeśli jakieś pole puste
+
+      if (wierszSet.has(valW) || kolumnaSet.has(valK)) return false; // powtórzenie
+      wierszSet.add(valW);
+      kolumnaSet.add(valK);
+    }
+  }
+
+  // sprawdzenie bloków 3x3
+  for (var br = 0; br < 3; br++) {
+    for (var bc = 0; bc < 3; bc++) {
+      var blokSet = new Set();
+      for (var r = 0; r < 3; r++) {
+        for (var c = 0; c < 3; c++) {
+          var val = tablica[br*3 + r][bc*3 + c];
+          if (blokSet.has(val)) return false;
+          blokSet.add(val);
+        }
+      }
+    }
+  }
+
+  return true; // jeśli wszystko poprawnie wypełnione
+} 
+function wyswietlWygrana() {
+  var tekst = "Wygrrrana!";
+  ctx.font = "50px sans-serif";
+
+  var metryka = ctx.measureText(tekst);
+  var szerokosc = metryka.width;
+  var srodekX = rozmiar / 2;
+  var srodekY = rozmiar / 2;
+
+  // obwódka
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgb(57,105,11)";
+  ctx.strokeText(tekst, srodekX, srodekY);
+
+  // wypełnienie
+  ctx.fillStyle = "rgb(87,180,41)";
+  ctx.fillText(tekst, srodekX, srodekY);
+}
+
+
 // co się dzieje jak ktoś kliknie
 function poKliknieciu(e) {
+  if (wygrana) {
+    // reset po wygranej
+    tablica = [
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+      [-1,-1,-1,-1,-1,-1,-1,-1,-1]
+    ];
+    startowe = startowe.map(r => r.map(() => false));
+    inicjalizujPlanszeStartowa();
+    narysujSiatke();
+    for (var r=0; r<9; r++) {
+      for (var c=0; c<9; c++) {
+        if (tablica[r][c]>=0) draw_letter(c,r);
+      }
+    }
+    wygrana = false;
+    return;
+  }
+
   var prostokat = canvas.getBoundingClientRect();
   var myszX = e.clientX - prostokat.left;
   var myszY = e.clientY - prostokat.top;
@@ -222,7 +301,6 @@ function poKliknieciu(e) {
 
   if (kolumna < 0 || kolumna > 8 || wiersz < 0 || wiersz > 8) return;
 
-  // blokada startowych liter
   if (startowe[wiersz][kolumna]) return;
 
   var aktualnyNumer = tablica[wiersz][kolumna];
@@ -236,8 +314,13 @@ function poKliknieciu(e) {
       if (tablica[r][c] >= 0) draw_letter(c,r);
     }
   }
-}
 
+  // sprawdzamy wygraną
+  if (sprawdzWygrana()) {
+    wygrana = true;
+    wyswietlWygrana();
+  }
+}
 // start programu
 inicjalizujPlanszeStartowa();
 narysujSiatke();
